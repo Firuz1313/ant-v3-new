@@ -1,0 +1,36 @@
+How should the AI use your design system?
+
+Our design system components are in src/components/core/
+
+Custom components are in src/components/custom/
+
+Component patterns and props:
+- All components use Vue 3 Composition API with <script setup>
+- All components are prefixed with "art-" (e.g., ArtStatsCard, ArtBarChart)
+- All props are typed with TypeScript interfaces
+- Components use SCSS scoped styles
+- Components are organized by category: banners, base, cards, charts, forms, layouts, media, tables, text-effect, views
+
+Element Plus 2.11.2 is used as the base UI framework. Available components include ElButton, ElInput, ElForm, ElTable, ElCard, ElDialog, ElSelect, etc.
+
+Available component categories:
+- Cards: src/components/core/cards/ (ArtStatsCard, ArtBarChartCard, ArtLineChartCard, ArtDonutChartCard, ArtProgressCard)
+- Charts: src/components/core/charts/ (ArtBarChart, ArtLineChart, ArtRingChart, ArtMapChart, ArtRadarChart)
+- Forms: src/components/core/forms/ (ArtForm, ArtSearchBar, ArtWangEditor)
+- Layouts: src/components/core/layouts/ (ArtHeaderBar, ArtSidebarMenu, ArtBreadcrumb, ArtPageContent)
+
+Types are defined in src/types/component/
+
+Composables are in src/composables/ (useChart, useTable, useAuth, useTheme)
+
+You can refer to files in your repository directly:
+- src/components/core/cards/art-stats-card/index.vue
+- src/components/core/charts/art-bar-chart/index.vue
+- src/components/core/forms/art-form/index.vue
+- src/types/component/chart.ts
+
+Always use full import paths with @/ alias:
+import ArtStatsCard from '@/components/core/cards/art-stats-card/index.vue'
+
+Use TypeScript for all props and data types. Follow the art-* naming convention for components.
+
