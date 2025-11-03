@@ -13,10 +13,16 @@ import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
 export default ({ mode }: { mode: string }) => {
   const root = process.cwd()
   const env = loadEnv(mode, root)
-  const { VITE_VERSION, VITE_PORT, VITE_BASE_URL, VITE_API_URL, VITE_API_PROXY_URL } = env
+  const {
+    VITE_VERSION = '2.5.8',
+    VITE_PORT = '3006',
+    VITE_BASE_URL = '/',
+    VITE_API_URL = '/api/mock'
+  } = env
 
   console.log(`🚀 API_URL = ${VITE_API_URL}`)
   console.log(`🚀 VERSION = ${VITE_VERSION}`)
+  console.log(`🚀 PORT = ${VITE_PORT}`)
 
   return defineConfig({
     define: {
@@ -24,8 +30,9 @@ export default ({ mode }: { mode: string }) => {
     },
     base: VITE_BASE_URL,
     server: {
-      port: Number(VITE_PORT),
+      port: Number(VITE_PORT) || 3006,
       open: '/#/auth/login', // Автоматически открывать страницу входа
+      host: true, // Доступен извне для Builder.io
       // Proxy отключен - работаем локально без внешних API
       // proxy: {
       //   '/api': {
@@ -34,7 +41,13 @@ export default ({ mode }: { mode: string }) => {
       //     rewrite: (path) => path.replace(/^\/api/, '')
       //   }
       // },
-      host: true
+      // Настройки CORS для Builder.io
+      cors: true,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With'
+      }
     },
     // 路径别名
     resolve: {
