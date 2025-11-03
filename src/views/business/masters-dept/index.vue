@@ -105,7 +105,9 @@
           <div class="gauge-container">
             <div ref="gaugeRef" class="gauge-chart"></div>
             <div class="gauge-info">
-              <div class="gauge-text">Ежедневно нужно выполнить для достижения плановых подключений</div>
+              <div class="gauge-text"
+                >Ежедневно нужно выполнить для достижения плановых подключений</div
+              >
               <div class="gauge-target">
                 <div class="target-value">190.24</div>
                 <div class="target-label">Цель для достижения плана</div>
@@ -119,7 +121,7 @@
 </template>
 
 <script setup lang="ts">
-  import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
+  import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
   import * as echarts from 'echarts'
 
   interface TableRow {
@@ -146,7 +148,7 @@
     { date: '13 января 2025 г.', plan: 51.29, fact: 35, percent: 68.26 },
     { date: '14 января 2025 г.', plan: 51.29, fact: 33, percent: 64.34 },
     { date: '15 января 2025 г.', plan: 51.29, fact: 36, percent: 70.19 },
-    { date: '16 января 2025 г.', plan: 51.29, fact: 32, percent: 62.40 },
+    { date: '16 января 2025 г.', plan: 51.29, fact: 32, percent: 62.4 },
     { date: '17 января 2025 г.', plan: 51.29, fact: 30, percent: 58.49 },
     { date: '18 января 2025 г.', plan: 51.29, fact: 23, percent: 44.84 },
     { date: '19 января 2025 г.', plan: 51.29, fact: 22, percent: 42.89 },
@@ -189,18 +191,18 @@
     function step(currentTime: number) {
       const elapsed = currentTime - startTime
       const progress = Math.min(elapsed / duration, 1)
-      
+
       // Easing function (ease-out)
       const easeOut = 1 - Math.pow(1 - progress, 3)
       const current = start + difference * easeOut
-      
+
       callback(Math.round(current))
-      
+
       if (progress < 1) {
         requestAnimationFrame(step)
       }
     }
-    
+
     requestAnimationFrame(step)
   }
 
@@ -219,50 +221,70 @@
     function step(currentTime: number) {
       const elapsed = currentTime - startTime
       const progress = Math.min(elapsed / duration, 1)
-      
+
       const easeOut = 1 - Math.pow(1 - progress, 3)
       const current = numStart + (numEnd - numStart) * easeOut
-      
+
       if (hasText) {
         callback(`${Math.round(current)} ТЫС.`)
       } else {
         callback(Math.round(current).toString())
       }
-      
+
       if (progress < 1) {
         requestAnimationFrame(step)
       }
     }
-    
+
     requestAnimationFrame(step)
   }
 
   const handleResize = () => {
-    gaugeChart && gaugeChart.resize()
+    if (gaugeChart) {
+      gaugeChart.resize()
+    }
   }
 
   // Start animations on mount
   onMounted(() => {
     renderGauge(0) // Initialize gauge at 0
     window.addEventListener('resize', handleResize)
-    
+
     // Delay to ensure page is rendered
     setTimeout(() => {
       // Days
-      animateValue(0, 30, 1500, (val) => { animatedMonthDays.value = val })
-      animateValue(0, 1, 1500, (val) => { animatedDaysPassed.value = val })
-      animateValue(0, 29, 1500, (val) => { animatedDaysLeft.value = val })
-      
+      animateValue(0, 30, 1500, (val) => {
+        animatedMonthDays.value = val
+      })
+      animateValue(0, 1, 1500, (val) => {
+        animatedDaysPassed.value = val
+      })
+      animateValue(0, 29, 1500, (val) => {
+        animatedDaysLeft.value = val
+      })
+
       // Applications
-      animateTextValue('0', '13 ТЫС.', 2000, (val) => { animatedApplications.value = val })
-      
+      animateTextValue('0', '13 ТЫС.', 2000, (val) => {
+        animatedApplications.value = val
+      })
+
       // Numbers
-      animateValue(0, totals.value.plan, 2000, (val) => { animatedPlan.value = val })
-      animateValue(0, remainingForPlan.value, 2000, (val) => { animatedRemaining.value = val })
-      animateValue(0, cancelled.value, 2000, (val) => { animatedCancelled.value = val })
-      animateValue(0, totals.value.fact, 2000, (val) => { animatedFact.value = val })
-      animateValue(0, inProgress.value, 2000, (val) => { animatedInProgress.value = val })
-      
+      animateValue(0, totals.value.plan, 2000, (val) => {
+        animatedPlan.value = val
+      })
+      animateValue(0, remainingForPlan.value, 2000, (val) => {
+        animatedRemaining.value = val
+      })
+      animateValue(0, cancelled.value, 2000, (val) => {
+        animatedCancelled.value = val
+      })
+      animateValue(0, totals.value.fact, 2000, (val) => {
+        animatedFact.value = val
+      })
+      animateValue(0, inProgress.value, 2000, (val) => {
+        animatedInProgress.value = val
+      })
+
       // Gauge animation
       animateGauge()
     }, 300)
@@ -273,7 +295,9 @@
     if (decimals > 0) {
       return num.toFixed(decimals).replace(/\B(?=(\d{3})+(?!\d))/g, ' ')
     }
-    return Math.round(num).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')
+    return Math.round(num)
+      .toString()
+      .replace(/\B(?=(\d{3})+(?!\d))/g, ' ')
   }
 
   function getPercentClass(percent: number): string {
@@ -375,17 +399,17 @@
     function step(currentTime: number) {
       const elapsed = currentTime - startTime
       const progress = Math.min(elapsed / duration, 1)
-      
+
       const easeOut = 1 - Math.pow(1 - progress, 3)
       const current = 0 + (endValue - 0) * easeOut
-      
+
       renderGauge(Math.round(current))
-      
+
       if (progress < 1) {
         requestAnimationFrame(step)
       }
     }
-    
+
     requestAnimationFrame(step)
   }
 
@@ -400,10 +424,10 @@
 
 <style scoped lang="scss">
   .masters-overview {
-    padding: 20px;
-    background: #f8fafc;
     min-height: 100vh;
+    padding: 20px;
     font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+    background: #f8fafc;
   }
 
   .layout-container {
@@ -416,10 +440,10 @@
 
   /* Left Panel - Table */
   .left-panel {
-    background: #ffffff;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     overflow: hidden;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgb(0 0 0 / 10%);
   }
 
   .table-header {
@@ -443,16 +467,16 @@
 
   .main-table {
     width: 100%;
-    
+
     :deep(.el-table__header-wrapper) {
       .el-table__header {
         th {
-          background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
-          color: #1e40af;
-          font-weight: 700;
-          font-size: 13px;
           padding: 12px 16px;
+          font-size: 13px;
+          font-weight: 700;
+          color: #1e40af;
           text-align: center;
+          background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
           border-color: #cbd5e1;
         }
       }
@@ -462,17 +486,17 @@
       .el-table__body {
         .row-even {
           background-color: #f0f9ff;
-          
+
           td {
             background-color: #f0f9ff;
           }
         }
-        
+
         .row-odd {
-          background-color: #ffffff;
-          
+          background-color: #fff;
+
           td {
-            background-color: #ffffff;
+            background-color: #fff;
           }
         }
 
@@ -486,55 +510,55 @@
   }
 
   .date-cell {
-    color: #1f2937;
     font-weight: 500;
+    color: #1f2937;
   }
 
   .plan-cell {
-    color: #1f2937;
     font-weight: 600;
+    color: #1f2937;
   }
 
   .fact-cell {
-    color: #1f2937;
     font-weight: 600;
+    color: #1f2937;
   }
 
   .percent-cell {
     display: inline-flex;
-    align-items: center;
     gap: 4px;
+    align-items: center;
     padding: 4px 10px;
-    border-radius: 4px;
-    font-weight: 700;
     font-size: 12px;
+    font-weight: 700;
+    border-radius: 4px;
 
     &.high {
-      background: rgba(34, 197, 94, 0.15);
       color: #15803d;
+      background: rgb(34 197 94 / 15%);
     }
 
     &.medium {
-      background: rgba(234, 179, 8, 0.15);
       color: #a16207;
+      background: rgb(234 179 8 / 15%);
     }
 
     &.low {
-      background: rgba(239, 68, 68, 0.15);
       color: #b91c1c;
+      background: rgb(239 68 68 / 15%);
     }
 
     .arrow-icon {
       font-size: 10px;
-      
+
       &.up::after {
         content: '▲';
       }
-      
+
       &.neutral::after {
         content: '▶';
       }
-      
+
       &.down::after {
         content: '▼';
       }
@@ -545,62 +569,62 @@
     display: grid;
     grid-template-columns: auto repeat(3, 1fr);
     gap: 12px;
+    align-items: center;
     padding: 16px 20px;
     background: #f8fafc;
     border-top: 2px solid #e5e7eb;
-    align-items: center;
   }
 
   .summary-label {
-    font-weight: 800;
     font-size: 14px;
+    font-weight: 800;
     color: #1f2937;
   }
 
   .summary-value {
-    text-align: center;
-    font-weight: 700;
     font-size: 14px;
+    font-weight: 700;
     color: #1f2937;
+    text-align: center;
   }
 
   .summary-percent {
     display: inline-flex;
+    gap: 4px;
     align-items: center;
     justify-content: center;
-    gap: 4px;
     padding: 4px 10px;
-    border-radius: 4px;
-    font-weight: 700;
-    font-size: 13px;
     margin: 0 auto;
+    font-size: 13px;
+    font-weight: 700;
+    border-radius: 4px;
 
     &.high {
-      background: rgba(34, 197, 94, 0.15);
       color: #15803d;
+      background: rgb(34 197 94 / 15%);
     }
 
     &.medium {
-      background: rgba(234, 179, 8, 0.15);
       color: #a16207;
+      background: rgb(234 179 8 / 15%);
     }
 
     &.low {
-      background: rgba(239, 68, 68, 0.15);
       color: #b91c1c;
+      background: rgb(239 68 68 / 15%);
     }
 
     .arrow-icon {
       font-size: 10px;
-      
+
       &.up::after {
         content: '▲';
       }
-      
+
       &.neutral::after {
         content: '▶';
       }
-      
+
       &.down::after {
         content: '▼';
       }
@@ -614,13 +638,13 @@
   }
 
   .right-panel-content {
-    background: #ffffff;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    padding: 20px;
     display: flex;
     flex-direction: column;
     gap: 16px;
+    padding: 20px;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgb(0 0 0 / 10%);
   }
 
   .kpi-row {
@@ -640,11 +664,11 @@
   }
 
   .kpi-card {
-    background: transparent;
-    border-radius: 8px;
     padding: 16px;
     text-align: center;
+    background: transparent;
     border: 1px solid #e5e7eb;
+    border-radius: 8px;
     transition: transform 0.2s;
 
     &:hover {
@@ -660,23 +684,23 @@
     }
 
     .kpi-value {
+      margin-bottom: 8px;
       font-size: 28px;
       font-weight: 800;
       line-height: 1.2;
-      margin-bottom: 8px;
     }
 
     .kpi-label {
       font-size: 12px;
       font-weight: 600;
-      color: #6b7280;
       line-height: 1.3;
+      color: #6b7280;
     }
 
     &.blue {
       background: linear-gradient(135deg, #dbeafe 0%, #e0e7ff 100%);
       border-color: #93c5fd;
-      
+
       .kpi-value {
         color: #1e40af;
       }
@@ -685,7 +709,7 @@
     &.green {
       background: linear-gradient(135deg, #dcfce7 0%, #d1fae5 100%);
       border-color: #86efac;
-      
+
       .kpi-value {
         color: #15803d;
       }
@@ -694,7 +718,7 @@
     &.red {
       background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
       border-color: #fca5a5;
-      
+
       .kpi-value {
         color: #991b1b;
       }
@@ -703,7 +727,7 @@
     &.orange {
       background: linear-gradient(135deg, #fed7aa 0%, #fde68a 100%);
       border-color: #fcd34d;
-      
+
       .kpi-value {
         color: #b45309;
       }
@@ -712,13 +736,13 @@
 
   /* Gauge Chart */
   .gauge-container {
-    background: transparent;
-    border-radius: 8px;
-    padding: 20px 0;
-    border: none;
     display: flex;
     flex-direction: column;
     align-items: center;
+    padding: 20px 0;
+    background: transparent;
+    border: none;
+    border-radius: 8px;
   }
 
   .gauge-chart {
@@ -733,19 +757,19 @@
   }
 
   .gauge-text {
+    margin-bottom: 12px;
     font-size: 12px;
     font-weight: 600;
-    color: #6b7280;
-    margin-bottom: 12px;
     line-height: 1.4;
+    color: #6b7280;
   }
 
   .gauge-target {
     .target-value {
+      margin-bottom: 4px;
       font-size: 28px;
       font-weight: 800;
       color: #16a34a;
-      margin-bottom: 4px;
     }
 
     .target-label {
@@ -756,14 +780,14 @@
   }
 
   /* Responsive */
-  @media (max-width: 1400px) {
+  @media (width <= 1400px) {
     .layout-container {
       grid-template-columns: 1.4fr 1fr;
       gap: 16px;
     }
   }
 
-  @media (max-width: 1200px) {
+  @media (width <= 1200px) {
     .layout-container {
       grid-template-columns: 1fr;
       gap: 16px;
@@ -778,7 +802,7 @@
     }
   }
 
-  @media (max-width: 992px) {
+  @media (width <= 992px) {
     .masters-overview {
       padding: 16px;
     }
@@ -801,7 +825,7 @@
     }
   }
 
-  @media (max-width: 768px) {
+  @media (width <= 768px) {
     .masters-overview {
       padding: 12px;
     }
@@ -828,7 +852,7 @@
     }
   }
 
-  @media (max-width: 480px) {
+  @media (width <= 480px) {
     .table-title {
       font-size: 16px;
     }
