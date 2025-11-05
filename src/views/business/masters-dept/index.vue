@@ -1,5 +1,75 @@
 <template>
   <div class="masters-overview">
+    <div class="page-title-section">
+      <h1 class="page-title">ОТДЕЛ МАСТЕРОВ — ОБЩАЯ СВОДКА</h1>
+    </div>
+
+    <div class="filters-section">
+      <div class="filter-bar-container">
+        <div class="filter-bar">
+          <div class="filter-group">
+            <label class="filter-label">Период:</label>
+            <el-date-picker
+              v-model="dateRange"
+              type="daterange"
+              range-separator="—"
+              start-placeholder="От"
+              end-placeholder="До"
+              format="DD.MM.YYYY"
+              size="small"
+              class="date-picker-input"
+              @change="onFilterChange"
+            />
+          </div>
+
+          <div class="filter-divider"></div>
+
+          <div class="filter-group days-group">
+            <label class="filter-label">Дни:</label>
+            <div class="days-input-group">
+              <el-input-number
+                v-model="daysRange[0]"
+                :min="1"
+                :max="31"
+                size="small"
+                controls-position="right"
+                @change="validateDaysRange"
+              />
+              <span class="days-separator">—</span>
+              <el-input-number
+                v-model="daysRange[1]"
+                :min="1"
+                :max="31"
+                size="small"
+                controls-position="right"
+                @change="validateDaysRange"
+              />
+              <span class="days-count">({{ daysRange[1] - daysRange[0] + 1 }} дн.)</span>
+            </div>
+          </div>
+
+          <div class="filter-divider"></div>
+
+          <div class="filter-presets">
+            <el-button
+              v-for="preset in datePresets"
+              :key="preset.name"
+              :type="isPresetActive(preset) ? 'primary' : 'default'"
+              size="small"
+              @click="applyPreset(preset)"
+              class="preset-button"
+            >
+              {{ preset.label }}
+            </el-button>
+          </div>
+
+          <div class="filter-actions">
+            <el-button @click="resetFilters" size="small" plain type="info"> Очистить </el-button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div class="layout-container">
       <!-- Left Panel: Table -->
       <div class="left-panel">
@@ -131,8 +201,14 @@
     percent: number
   }
 
+  interface DatePreset {
+    name: string
+    label: string
+    getRange: () => [Date, Date]
+  }
+
   // Mock data based on photo
-  const tableData = ref<TableRow[]>([
+  const allTableData = ref<TableRow[]>([
     { date: '1 января 2025 г.', plan: 51.29, fact: 22, percent: 42.89 },
     { date: '2 января 2025 г.', plan: 51.29, fact: 24, percent: 46.79 },
     { date: '3 января 2025 г.', plan: 51.29, fact: 116, percent: 226.16 },
@@ -155,8 +231,65 @@
     { date: '20 января 2025 г.', plan: 51.29, fact: 24, percent: 46.79 }
   ])
 
-  // From photo: 13880 план, 8363 факт, 60.25% выполнение
-  const totals = ref({ plan: 13880, fact: 8363 })
+  // Filter state
+  const dateRange = ref<[Date, Date] | null>(null)
+  const daysRange = ref<[number, number]>([1, 31])
+  const defaultDateRange: [Date, Date] = [new Date(2025, 0, 1), new Date(2025, 0, 31)]
+
+  const datePresets: DatePreset[] = [
+    {
+      name: 'month',
+      label: 'Месяц',
+      getRange: () => [new Date(2025, 0, 1), new Date(2025, 0, 31)]
+    },
+    {
+      name: 'first',
+      label: '1-15',
+      getRange: () => [new Date(2025, 0, 1), new Date(2025, 0, 15)]
+    },
+    {
+      name: 'second',
+      label: '16-31',
+      getRange: () => [new Date(2025, 0, 16), new Date(2025, 0, 31)]
+    },
+    {
+      name: 'week',
+      label: 'Неделя',
+      getRange: () => {
+        const end = new Date(2025, 0, 31)
+        const start = new Date(end)
+        start.setDate(start.getDate() - 6)
+        return [start, end]
+      }
+    }
+  ]
+
+  // Filtered table data
+  const tableData = computed(() => {
+    let filtered = [...allTableData.value]
+
+    // Filter by days range
+    if (daysRange.value[0] && daysRange.value[1]) {
+      filtered = filtered.filter((row) => {
+        const dayMatch = row.date.match(/(\d+)\s+января/)
+        if (dayMatch) {
+          const day = parseInt(dayMatch[1])
+          return day >= daysRange.value[0] && day <= daysRange.value[1]
+        }
+        return true
+      })
+    }
+
+    return filtered
+  })
+
+  // Calculate totals from filtered data
+  const totals = computed(() => {
+    const filtered = tableData.value
+    const plan = filtered.reduce((sum, row) => sum + row.plan, 0)
+    const fact = filtered.reduce((sum, row) => sum + row.fact, 0)
+    return { plan, fact }
+  })
 
   const overallPercent = computed(() => {
     if (!totals.value.plan) return 0
@@ -247,6 +380,9 @@
 
   // Start animations on mount
   onMounted(() => {
+    if (!dateRange.value) {
+      dateRange.value = [...defaultDateRange]
+    }
     renderGauge(0) // Initialize gauge at 0
     window.addEventListener('resize', handleResize)
 
@@ -351,7 +487,7 @@
             roundCap: true,
             clip: false,
             itemStyle: {
-              color: '#22c55e'
+              color: '#16a34a'
             },
             width: 24
           },
@@ -413,6 +549,41 @@
     requestAnimationFrame(step)
   }
 
+  // Filter functions
+  function validateDaysRange() {
+    if (daysRange.value[0] > daysRange.value[1]) {
+      const temp = daysRange.value[0]
+      daysRange.value[0] = daysRange.value[1]
+      daysRange.value[1] = temp
+    }
+  }
+
+  function onFilterChange() {
+    // Reactive update happens automatically via computed property
+  }
+
+  function resetFilters() {
+    dateRange.value = [...defaultDateRange]
+    daysRange.value = [1, 31]
+  }
+
+  function isPresetActive(preset: DatePreset): boolean {
+    const range = dateRange.value || defaultDateRange
+    if (!range || range.length !== 2) return false
+
+    const [presetStart, presetEnd] = preset.getRange()
+    const [currentStart, currentEnd] = range
+
+    return (
+      currentStart.getTime() === presetStart.getTime() &&
+      currentEnd.getTime() === presetEnd.getTime()
+    )
+  }
+
+  function applyPreset(preset: DatePreset) {
+    dateRange.value = preset.getRange()
+  }
+
   onBeforeUnmount(() => {
     window.removeEventListener('resize', handleResize)
     if (gaugeChart) {
@@ -424,10 +595,163 @@
 
 <style scoped lang="scss">
   .masters-overview {
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 100vw;
     min-height: 100vh;
-    padding: 20px;
+    padding: 24px;
+    margin: 0 auto;
     font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
-    background: #f8fafc;
+    background: linear-gradient(135deg, #f8fafc 0%, #fff 100%);
+  }
+
+  .page-title-section {
+    margin-bottom: 32px;
+    text-align: center;
+
+    .page-title {
+      padding: 0;
+      margin: 0;
+      font-size: 32px;
+      font-weight: 800;
+      color: #1e40af;
+      text-shadow: 0 2px 4px rgb(30 64 175 / 10%);
+      letter-spacing: 0.5px;
+    }
+  }
+
+  .filters-section {
+    margin-bottom: 20px;
+  }
+
+  .filter-bar-container {
+    overflow: hidden;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgb(0 0 0 / 8%);
+  }
+
+  .filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    align-items: center;
+    padding: 14px 18px;
+  }
+
+  .filter-group {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    white-space: nowrap;
+  }
+
+  .filter-label {
+    margin: 0;
+    font-size: 12px;
+    font-weight: 700;
+    color: #374151;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+  }
+
+  .date-picker-input {
+    width: 200px;
+
+    :deep(.el-input__inner) {
+      height: 32px;
+      font-size: 12px;
+      border-color: #d1d5db;
+      transition: all 0.2s ease;
+
+      &:focus {
+        border-color: #1e40af;
+        box-shadow: 0 0 0 2px rgb(30 64 175 / 10%);
+      }
+    }
+  }
+
+  .filter-divider {
+    width: 1px;
+    height: 24px;
+    background: #e5e7eb;
+  }
+
+  .days-group {
+    gap: 10px;
+  }
+
+  .days-input-group {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+
+    :deep(.el-input-number) {
+      width: 60px;
+
+      .el-input__inner {
+        height: 32px;
+        font-size: 12px;
+        font-weight: 600;
+        text-align: center;
+        border-color: #d1d5db;
+        transition: all 0.2s ease;
+
+        &:focus {
+          border-color: #1e40af;
+          box-shadow: 0 0 0 2px rgb(30 64 175 / 10%);
+        }
+      }
+    }
+  }
+
+  .days-separator {
+    font-size: 12px;
+    font-weight: 600;
+    color: #d1d5db;
+  }
+
+  .days-count {
+    font-size: 11px;
+    font-weight: 700;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    white-space: nowrap;
+  }
+
+  .filter-presets {
+    display: flex;
+    gap: 6px;
+  }
+
+  .preset-button {
+    min-width: 52px;
+    height: 32px;
+    padding: 5px 10px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    transition: all 0.2s ease;
+
+    &:hover {
+      transform: translateY(-1px);
+    }
+  }
+
+  .filter-actions {
+    display: flex;
+    gap: 8px;
+    margin-left: auto;
+
+    :deep(.el-button) {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
   }
 
   .layout-container {
@@ -442,19 +766,20 @@
   .left-panel {
     overflow: hidden;
     background: #fff;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgb(0 0 0 / 10%);
+    border: 1px solid rgb(30 64 175 / 10%);
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgb(0 0 0 / 8%);
   }
 
   .table-header {
-    padding: 16px 20px;
-    background: #f8fafc;
-    border-bottom: 1px solid #e5e7eb;
+    padding: 24px;
+    background: linear-gradient(135deg, #f8fafc 0%, #fff 100%);
+    border-bottom: 2px solid #f0f4f8;
   }
 
   .table-title {
     margin: 0;
-    font-size: 18px;
+    font-size: 20px;
     font-weight: 800;
     color: #1e40af;
     letter-spacing: 0.3px;
@@ -471,12 +796,12 @@
     :deep(.el-table__header-wrapper) {
       .el-table__header {
         th {
-          padding: 12px 16px;
+          padding: 16px 8px;
           font-size: 13px;
           font-weight: 700;
-          color: #1e40af;
+          color: white;
           text-align: center;
-          background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
+          background: linear-gradient(135deg, #1e40af 0%, #1d4ed8 100%);
           border-color: #cbd5e1;
         }
       }
@@ -501,10 +826,14 @@
         }
 
         td {
-          padding: 12px 16px;
+          padding: 16px 8px;
           font-size: 13px;
           border-color: #e5e7eb;
         }
+      }
+
+      :deep(.el-table__row:hover > td) {
+        background-color: #f3f4f6;
       }
     }
   }
@@ -570,9 +899,9 @@
     grid-template-columns: auto repeat(3, 1fr);
     gap: 12px;
     align-items: center;
-    padding: 16px 20px;
-    background: #f8fafc;
-    border-top: 2px solid #e5e7eb;
+    padding: 20px 24px;
+    background: linear-gradient(135deg, #f8fafc 0%, #fff 100%);
+    border-top: 2px solid #f0f4f8;
   }
 
   .summary-label {
@@ -643,8 +972,9 @@
     gap: 16px;
     padding: 20px;
     background: #fff;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgb(0 0 0 / 10%);
+    border: 1px solid rgb(30 64 175 / 10%);
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgb(0 0 0 / 8%);
   }
 
   .kpi-row {
@@ -664,14 +994,16 @@
   }
 
   .kpi-card {
-    padding: 16px;
+    padding: 16px 20px;
     text-align: center;
     background: transparent;
     border: 1px solid #e5e7eb;
     border-radius: 8px;
-    transition: transform 0.2s;
+    box-shadow: 0 1px 3px rgb(0 0 0 / 8%);
+    transition: all 0.3s ease;
 
     &:hover {
+      box-shadow: 0 4px 12px rgb(0 0 0 / 12%);
       transform: translateY(-2px);
     }
 
@@ -685,21 +1017,21 @@
 
     .kpi-value {
       margin-bottom: 8px;
-      font-size: 28px;
-      font-weight: 800;
-      line-height: 1.2;
+      font-size: 32px;
+      font-weight: 700;
+      line-height: 1;
     }
 
     .kpi-label {
-      font-size: 12px;
+      font-size: 14px;
       font-weight: 600;
       line-height: 1.3;
       color: #6b7280;
     }
 
     &.blue {
-      background: linear-gradient(135deg, #dbeafe 0%, #e0e7ff 100%);
-      border-color: #93c5fd;
+      color: #1e40af;
+      background: linear-gradient(135deg, #dbeafe, #f0f9ff);
 
       .kpi-value {
         color: #1e40af;
@@ -707,8 +1039,8 @@
     }
 
     &.green {
-      background: linear-gradient(135deg, #dcfce7 0%, #d1fae5 100%);
-      border-color: #86efac;
+      color: #15803d;
+      background: linear-gradient(135deg, #dcfce7, #f0fdf4);
 
       .kpi-value {
         color: #15803d;
@@ -716,8 +1048,8 @@
     }
 
     &.red {
-      background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
-      border-color: #fca5a5;
+      color: #991b1b;
+      background: linear-gradient(135deg, #fee2e2, #fef2f2);
 
       .kpi-value {
         color: #991b1b;
@@ -725,8 +1057,8 @@
     }
 
     &.orange {
-      background: linear-gradient(135deg, #fed7aa 0%, #fde68a 100%);
-      border-color: #fcd34d;
+      color: #b45309;
+      background: linear-gradient(135deg, #fed7aa, #fffbeb);
 
       .kpi-value {
         color: #b45309;
@@ -773,7 +1105,7 @@
     }
 
     .target-label {
-      font-size: 12px;
+      font-size: 14px;
       font-weight: 600;
       color: #6b7280;
     }
